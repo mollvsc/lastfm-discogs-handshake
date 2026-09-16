@@ -59,6 +59,39 @@ h1 {
   font-size: 1rem;
 }
 
+.lastfm-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.lastfm-banner.hidden {
+  display: none;
+}
+
+.lastfm-connect-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lastfm-connect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 main {
   padding: 24px;
 }

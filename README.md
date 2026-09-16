@@ -35,15 +35,8 @@ Copy `.env.example` to `.env` and fill in:
   https://www.discogs.com/settings/developers
 - `DISCOGS_USERNAME` — your Discogs username
 
-Then authorize once with Last.fm (opens a browser to approve access):
-
-```
-python3 auth_lastfm.py
-```
-
-This saves a session key to `.lastfm_session_key` (gitignored) that's
-reused on every future run — you only need to do this once, unless you
-revoke the app's access on Last.fm.
+That's the only manual setup step — connecting to Last.fm itself happens
+inside the GUI (see below).
 
 ## Usage
 
@@ -54,14 +47,26 @@ source venv/bin/activate
 python3 app.py
 ```
 
-Opens `http://127.0.0.1:5000` in your browser automatically. Search or
-browse the grid, click an album to see its tracklist, tick/untick "Dry
-run" and click **Scrobble to Last.fm**.
+Or on macOS, just double-click **`Launch Scrobbler.command`** in Finder
+instead of using the terminal at all (first time you run it, macOS may
+warn it's from an unidentified developer — right-click it and choose
+**Open** to allow it once).
+
+Either way, it opens `http://127.0.0.1:5000` in your browser
+automatically. If you haven't connected to Last.fm yet, a banner at the
+top offers a **Connect to Last.fm** button — click it, approve access on
+the Last.fm page that opens, then come back and click the button again
+to finish (this only needs to happen once; it saves a session key to
+`.lastfm_session_key`, gitignored, reused on every future run).
+
+Then search or browse the grid, click an album to see its tracklist,
+tick/untick "Dry run" and click **Scrobble to Last.fm**.
 
 ### CLI
 
 ```
 source venv/bin/activate
+python3 auth_lastfm.py   # one-time Last.fm authorization, if not already done via the GUI
 python3 scrobble.py
 ```
 

@@ -21,6 +21,10 @@ app = Flask(__name__)
 _collection = []
 _discogs_user = None
 
+# Holds the in-progress Last.fm web-auth handshake between the
+# start-auth and complete-auth calls below.
+_lastfm_auth_pending = {}
+
 
 def _find_by_id(release_id):
     for item in _collection:
@@ -32,6 +36,39 @@ def _find_by_id(release_id):
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/api/lastfm/status")
+def api_lastfm_status():
+    return jsonify({"connected": core.has_lastfm_session()})
+
+
+@app.route("/api/lastfm/start-auth", methods=["POST"])
+def api_lastfm_start_auth():
+    try:
+        skg, auth_url = core.start_lastfm_auth()
+    except core.ConfigError as e:
+        return jsonify({"error": str(e)}), 400
+    _lastfm_auth_pending["skg"] = skg
+    _lastfm_auth_pending["auth_url"] = auth_url
+    return jsonify({"auth_url": auth_url})
+
+
+@app.route("/api/lastfm/complete-auth", methods=["POST"])
+def api_lastfm_complete_auth():
+    skg = _lastfm_auth_pending.get("skg")
+    auth_url = _lastfm_auth_pending.get("auth_url")
+    if not skg or not auth_url:
+        return jsonify({"error": "Click \"Connect to Last.fm\" first."}), 400
+    try:
+        core.complete_lastfm_auth(skg, auth_url)
+    except Exception:
+        return jsonify({
+            "error": "Couldn't complete authorization -- did you click "
+                     "\"Allow access\" on the Last.fm page that opened?"
+        }), 400
+    _lastfm_auth_pending.clear()
+    return jsonify({"connected": True})
 
 
 @app.route("/api/collection")

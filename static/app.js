@@ -10,8 +10,67 @@ const modalResult = document.getElementById("modal-result");
 const dryRunCheckbox = document.getElementById("dry-run-checkbox");
 const scrobbleBtn = document.getElementById("scrobble-btn");
 const modalClose = document.getElementById("modal-close");
+const lastfmBanner = document.getElementById("lastfm-banner");
+const lastfmBannerText = document.getElementById("lastfm-banner-text");
+const lastfmConnectBtn = document.getElementById("lastfm-connect-btn");
 
 let currentReleaseId = null;
+let lastfmConnected = false;
+let pendingAuthUrl = null;
+
+function updateLastfmUI() {
+  if (lastfmConnected) {
+    lastfmBanner.classList.add("hidden");
+    dryRunCheckbox.disabled = false;
+  } else {
+    lastfmBanner.classList.remove("hidden");
+    dryRunCheckbox.checked = true;
+    dryRunCheckbox.disabled = true;
+    if (pendingAuthUrl) {
+      lastfmBannerText.textContent = "Waiting for you to approve access on the Last.fm page that opened…";
+      lastfmConnectBtn.textContent = "I've allowed it — finish connecting";
+    } else {
+      lastfmBannerText.textContent = "Not connected to Last.fm — real scrobbles are disabled until you connect.";
+      lastfmConnectBtn.textContent = "Connect to Last.fm";
+    }
+  }
+}
+
+async function checkLastfmStatus() {
+  const res = await fetch("/api/lastfm/status");
+  const data = await res.json();
+  lastfmConnected = data.connected;
+  updateLastfmUI();
+}
+
+async function handleLastfmConnectClick() {
+  lastfmConnectBtn.disabled = true;
+  try {
+    if (!pendingAuthUrl) {
+      const res = await fetch("/api/lastfm/start-auth", { method: "POST" });
+      const data = await res.json();
+      if (data.error) {
+        lastfmBannerText.textContent = `Error: ${data.error}`;
+        return;
+      }
+      pendingAuthUrl = data.auth_url;
+      window.open(data.auth_url, "_blank");
+      updateLastfmUI();
+    } else {
+      const res = await fetch("/api/lastfm/complete-auth", { method: "POST" });
+      const data = await res.json();
+      if (data.error) {
+        lastfmBannerText.textContent = `Error: ${data.error}`;
+        return;
+      }
+      lastfmConnected = true;
+      pendingAuthUrl = null;
+      updateLastfmUI();
+    }
+  } finally {
+    lastfmConnectBtn.disabled = false;
+  }
+}
 
 function renderGrid(items) {
   grid.innerHTML = "";
@@ -119,5 +178,7 @@ modalClose.addEventListener("click", () => modalBackdrop.classList.add("hidden")
 modalBackdrop.addEventListener("click", (e) => {
   if (e.target === modalBackdrop) modalBackdrop.classList.add("hidden");
 });
+lastfmConnectBtn.addEventListener("click", handleLastfmConnectClick);
 
 loadCollection();
+checkLastfmStatus();

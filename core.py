@@ -47,10 +47,37 @@ def connect_lastfm():
     if not api_key or not api_secret:
         raise ConfigError("Set LASTFM_API_KEY and LASTFM_API_SECRET in .env first.")
     if not os.path.exists(SESSION_KEY_FILE):
-        raise ConfigError("No Last.fm session found. Run `python3 auth_lastfm.py` first.")
+        raise ConfigError("Not connected to Last.fm yet.")
     with open(SESSION_KEY_FILE) as f:
         session_key = f.read().strip()
     return pylast.LastFMNetwork(api_key=api_key, api_secret=api_secret, session_key=session_key)
+
+
+def has_lastfm_session():
+    return os.path.exists(SESSION_KEY_FILE)
+
+
+def start_lastfm_auth():
+    """Begins the Last.fm web-auth flow. Returns (skg, auth_url); the
+    caller must hold onto `skg` and pass it (with the same auth_url) to
+    complete_lastfm_auth() once the user has approved access in their
+    browser."""
+    api_key = os.environ.get("LASTFM_API_KEY")
+    api_secret = os.environ.get("LASTFM_API_SECRET")
+    if not api_key or not api_secret:
+        raise ConfigError("Set LASTFM_API_KEY and LASTFM_API_SECRET in .env first.")
+    network = pylast.LastFMNetwork(api_key=api_key, api_secret=api_secret)
+    skg = pylast.SessionKeyGenerator(network)
+    auth_url = skg.get_web_auth_url()
+    return skg, auth_url
+
+
+def complete_lastfm_auth(skg, auth_url):
+    """Exchanges the approved auth_url for a session key and saves it."""
+    session_key = skg.get_web_auth_session_key(auth_url)
+    with open(SESSION_KEY_FILE, "w") as f:
+        f.write(session_key)
+    return session_key
 
 
 def load_collection(user):
