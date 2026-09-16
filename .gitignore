@@ -1,0 +1,5 @@
+venv/
+.env
+.lastfm_session_key
+__pycache__/
+*.pyc
