@@ -1,7 +1,13 @@
 # LastFM ↔ Discogs handshake
 
-Scrobble an album from your Discogs collection to Last.fm, from the
-command line.
+Scrobble an album from your Discogs collection to Last.fm. Two
+interfaces, same underlying logic (`core.py`):
+
+- **`app.py`** — a local browser-based GUI: searchable album grid with
+  cover art, click an album to see its tracklist, one button to scrobble
+- **`scrobble.py`** — a terminal-only CLI, if you prefer that
+
+Both run entirely on your own machine. Nothing is hosted publicly.
 
 ## How it works
 
@@ -40,6 +46,19 @@ reused on every future run — you only need to do this once, unless you
 revoke the app's access on Last.fm.
 
 ## Usage
+
+### GUI (recommended)
+
+```
+source venv/bin/activate
+python3 app.py
+```
+
+Opens `http://127.0.0.1:5000` in your browser automatically. Search or
+browse the grid, click an album to see its tracklist, tick/untick "Dry
+run" and click **Scrobble to Last.fm**.
+
+### CLI
 
 ```
 source venv/bin/activate

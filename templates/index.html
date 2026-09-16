@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discogs &rarr; Last.fm Scrobbler</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Discogs &rarr; Last.fm Scrobbler</h1>
+    <input id="search" type="text" placeholder="Search your collection (artist or album)&hellip;" autofocus>
+  </header>
+
+  <main>
+    <p id="status">Loading your collection&hellip;</p>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <div id="modal-backdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <button id="modal-close" class="modal-close" aria-label="Close">&times;</button>
+      <h2 id="modal-title"></h2>
+      <ol id="modal-tracklist" class="tracklist"></ol>
+      <label class="dry-run-toggle">
+        <input type="checkbox" id="dry-run-checkbox" checked>
+        Dry run (preview only, don't submit to Last.fm)
+      </label>
+      <button id="scrobble-btn" class="scrobble-btn">Scrobble to Last.fm</button>
+      <p id="modal-result"></p>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

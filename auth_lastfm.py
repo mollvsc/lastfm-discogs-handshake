@@ -9,11 +9,8 @@ import sys
 import webbrowser
 
 import pylast
-from dotenv import load_dotenv
 
-SESSION_KEY_FILE = ".lastfm_session_key"
-
-load_dotenv()
+from core import SESSION_KEY_FILE  # also triggers core's load_dotenv()
 
 
 def main():

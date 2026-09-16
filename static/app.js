@@ -1,0 +1,123 @@
+let collection = [];
+
+const grid = document.getElementById("grid");
+const status = document.getElementById("status");
+const search = document.getElementById("search");
+const modalBackdrop = document.getElementById("modal-backdrop");
+const modalTitle = document.getElementById("modal-title");
+const modalTracklist = document.getElementById("modal-tracklist");
+const modalResult = document.getElementById("modal-result");
+const dryRunCheckbox = document.getElementById("dry-run-checkbox");
+const scrobbleBtn = document.getElementById("scrobble-btn");
+const modalClose = document.getElementById("modal-close");
+
+let currentReleaseId = null;
+
+function renderGrid(items) {
+  grid.innerHTML = "";
+  for (const item of items) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${item.thumb || ''}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div class="card-info">
+        <div class="card-title">${escapeHtml(item.artist)} - ${escapeHtml(item.title)}</div>
+        <div class="card-year">${item.year || ""}</div>
+      </div>
+    `;
+    card.addEventListener("click", () => openModal(item.id));
+    grid.appendChild(card);
+  }
+}
+
+function escapeHtml(s) {
+  const div = document.createElement("div");
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function filterAndRender() {
+  const q = search.value.trim().toLowerCase();
+  const filtered = q
+    ? collection.filter(i => i.artist.toLowerCase().includes(q) || i.title.toLowerCase().includes(q))
+    : collection;
+  renderGrid(filtered);
+  status.textContent = `${filtered.length} of ${collection.length} releases`;
+}
+
+async function loadCollection() {
+  const res = await fetch("/api/collection");
+  collection = await res.json();
+  filterAndRender();
+}
+
+async function openModal(releaseId) {
+  currentReleaseId = releaseId;
+  modalResult.textContent = "";
+  modalTitle.textContent = "Loading tracklist…";
+  modalTracklist.innerHTML = "";
+  scrobbleBtn.disabled = false;
+  dryRunCheckbox.checked = true;
+  modalBackdrop.classList.remove("hidden");
+
+  const res = await fetch(`/api/release/${releaseId}`);
+  const data = await res.json();
+  if (data.error) {
+    modalTitle.textContent = "Error";
+    modalResult.textContent = data.error;
+    return;
+  }
+
+  modalTitle.textContent = `${data.artist} - ${data.title}`;
+  modalTracklist.innerHTML = data.tracks.map(t => `
+    <li>${escapeHtml(t.artist)} - ${escapeHtml(t.title)}
+      <span class="track-duration">(${formatDuration(t.duration)})</span>
+    </li>
+  `).join("");
+}
+
+function formatDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+async function submitScrobble() {
+  const dryRun = dryRunCheckbox.checked;
+  scrobbleBtn.disabled = true;
+  modalResult.textContent = dryRun ? "Previewing…" : "Scrobbling…";
+
+  try {
+    const res = await fetch("/api/scrobble", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ release_id: currentReleaseId, dry_run: dryRun }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      modalResult.textContent = `Error: ${data.error}`;
+    } else if (dryRun) {
+      const lines = data.planned.map(t => {
+        const when = new Date(t.timestamp * 1000).toLocaleTimeString();
+        return `[${when}] ${t.artist} - ${t.title}`;
+      });
+      modalResult.textContent = `Would scrobble ${data.planned.length} tracks:\n` + lines.join("\n");
+    } else {
+      modalResult.textContent = `Scrobbled ${data.planned.length} tracks to Last.fm.`;
+    }
+  } catch (err) {
+    modalResult.textContent = `Error: ${err}`;
+  } finally {
+    scrobbleBtn.disabled = false;
+  }
+}
+
+search.addEventListener("input", filterAndRender);
+scrobbleBtn.addEventListener("click", submitScrobble);
+modalClose.addEventListener("click", () => modalBackdrop.classList.add("hidden"));
+modalBackdrop.addEventListener("click", (e) => {
+  if (e.target === modalBackdrop) modalBackdrop.classList.add("hidden");
+});
+
+loadCollection();
